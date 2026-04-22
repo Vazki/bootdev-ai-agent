@@ -1,5 +1,6 @@
 import os
 import subprocess
+import google.genai.types as types
 
 def run_python_file(working_directory, file_path, args=None):
     # get absolute path of the target file
@@ -31,3 +32,25 @@ def run_python_file(working_directory, file_path, args=None):
         return output
     except Exception as e:
         return f"Error: executing Python file: {e}"
+
+# Define the function declaration schema for run_python_file
+# This should be added to the list of available functions in call_function.py
+# Used for type checking and to provide metadata about the function to the agent    
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Executes a specified Python file relative to the working directory and captures its output",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="Path to the Python file to execute, relative to the working directory",
+            ),
+            "args": types.Schema(
+                type=types.Type.ARRAY,
+                items=types.Schema(type=types.Type.STRING),
+                description="Optional list of command-line arguments to pass to the Python file",
+            ),
+        },
+    ),
+)

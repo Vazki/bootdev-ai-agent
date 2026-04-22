@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import errors, types
 from prompts import system_prompt
+from call_function import available_functions, call_function
 
 load_dotenv()
 api_key = os.environ.get("GEMINI_API_KEY")
@@ -32,7 +33,9 @@ def main():
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=messages,
-                config=types.GenerateContentConfig(system_instruction=system_prompt, temperature=0)
+                config=types.GenerateContentConfig(system_instruction=system_prompt, 
+                                                   tools=[available_functions],
+                                                   temperature=0)
             )
             if not response.usage_metadata:
                 raise RuntimeError("Response metadata is missing. Cannot determine token usage.")
@@ -44,13 +47,36 @@ def main():
                     f"Prompt tokens: {prompt_tokens}\n"
                     f"Response tokens: {response_tokens}\n"
                 )
-            print(response.text)
+            if response.function_calls:
+                function_results_list = []
+                for call in response.function_calls:
+                    function_call_result = call_function(call, verbose=args.verbose)
+                    if function_call_result.parts == []:
+                        raise Exception(
+                            f"Function call {call.name} did not return any parts. Response: {response}"
+                        )
+                    if function_call_result.parts[0].function_response is None:
+                        raise Exception(
+                            f"Function call {call.name} did not return a function response. Response: {response}"
+                        )
+                    if function_call_result.parts[0].function_response.response is None:
+                        raise Exception(
+                            f"Function call {call.name} did not return a response in the function response. Response: {response}"
+                        )
+                    function_results_list.append(function_call_result.parts[0])
+                    if args.verbose:
+                        print(f"-> {function_call_result.parts[0].function_response.response}")
+            else:
+                print(response.text)
             return
         except errors.ServerError as e:
             if attempt == max_retries - 1:
                 raise
             delay = base_delay * (2 ** attempt)
-            print(f"ServerError on attempt {attempt + 1}/{max_retries}: {e}. Retrying in {delay}s...")
+            if args.verbose:
+                print(f"ServerError on attempt {attempt + 1}/{max_retries}: {e}. Retrying in {delay}s...")
+            else:
+                print(f"ServerError on attempt {attempt + 1}/{max_retries}: {e}. Retrying...")
             time.sleep(delay)
 
 if __name__ == "__main__":

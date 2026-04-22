@@ -1,5 +1,6 @@
 import os
 from config import *
+import google.genai.types as types
 
 def get_file_content(working_directory, file_path):
     # If the file_path is outside the working_directory, return error string.
@@ -22,4 +23,19 @@ def get_file_content(working_directory, file_path):
     except Exception as e:
         return f'Error: An error occurred while reading the file "{file_path}": {str(e)}'
             
-
+# Define the function declaration schema for get_file_content
+# This should be added to the list of available functions in call_function.py
+# Used for type checking and to provide metadata about the function to the agent
+schema_get_file_content = types.FunctionDeclaration(
+    name="get_file_content",
+    description="Reads the content of a specified file relative to the working directory",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="Path to the file to read, relative to the working directory",
+            ),
+        },
+    ),
+)
