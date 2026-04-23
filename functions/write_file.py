@@ -19,7 +19,10 @@ def write_file(working_directory, file_path, content):
         return f'Successfully wrote to "{file_path}" ({len(content)} characters written)'
     except Exception as e:
         return f'Error: An error occurred while writing to the file "{file_path}": {str(e)}'
-    
+
+# Define the function declaration schema for write_file
+# This should be added to the list of available functions in call_function.py
+# Used for type checking and to provide metadata about the function to the agent    
 schema_write_file = types.FunctionDeclaration(
     name="write_file",
     description="Writes content to a specified file relative to the working directory",
